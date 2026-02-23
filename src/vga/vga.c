@@ -11,14 +11,14 @@
 
 #include "vga.h"
 #include "vga.pio.h"
-#include "pio_utils.h"
+#include "../pio-utils/pio_utils.h"
 
 #include "../display.h"
 
 #include "pico/multicore.h"
 #include "pico/binary_info.h"
 
-#include "hardware/dma.h"
+#include "C:/Users/tchv7/.pico-sdk/sdk/2.1.1/src/rp2_common/hardware_dma/include/hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "../../submodules/vrEmuTms9918/src/vrEmuTms9918.h"
