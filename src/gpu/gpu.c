@@ -85,7 +85,6 @@ static void triggerGpuDma()
   uint32_t height = tms9918->vram.bytes[0x8005];
   uint32_t stride = tms9918->vram.bytes[0x8006];
   uint32_t params = tms9918->vram.bytes[0x8007];
-  *(uint16_t*)(tms9918->vram.bytes + 0x8008) = 0;
 
   int32_t dstInc = params & 0x02 ? -1 : 1;
   int32_t srcInc = params & 0x01 ? 0 : dstInc;
@@ -99,6 +98,8 @@ static void triggerGpuDma()
     srcPtr += (stride - width) * srcInc;
     dstPtr += (stride - width) * dstInc;
   }
+
+  *(uint16_t*)(tms9918->vram.bytes + 0x8008) = 0;
 }
 
 
@@ -131,13 +132,13 @@ restart:
     TMS_REGISTER(tms9918, 0x38) = 1;
     TMS_STATUS(tms9918, 2) |= 0x80; // Running
 
-#if PICO_RP2040 // Old memory protection unit
+    #if PICO_RP2040 // Old memory protection unit
     mpu_hw->ctrl = M0PLUS_MPU_CTRL_PRIVDEFENA_BITS | M0PLUS_MPU_CTRL_ENABLE_BITS; // (=5) Turn on memory protection
 #else
     mpu_hw->ctrl = M33_MPU_CTRL_PRIVDEFENA_BITS | M33_MPU_CTRL_ENABLE_BITS; // (=5) Turn on memory protection
 #endif
     
-    lastAddress = run9900 (tms9918->vram.bytes, lastAddress, 0xFFFE, &TMS_REGISTER(tms9918, 0x38));
+    lastAddress = run9900(tms9918->vram.bytes, lastAddress, 0xFFFE, &TMS_REGISTER(tms9918, 0x38));
     mpu_hw->ctrl = 0; // Turn off memory protection - all models
     
     if (TMS_REGISTER(tms9918, 0x38) & 1)  // GPU program decided to stop itself?

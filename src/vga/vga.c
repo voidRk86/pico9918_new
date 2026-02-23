@@ -11,14 +11,14 @@
 
 #include "vga.h"
 #include "vga.pio.h"
-#include "../pio-utils/pio_utils.h"
+#include "pio_utils.h"
 
 #include "../display.h"
 
 #include "pico/multicore.h"
 #include "pico/binary_info.h"
 
-#include "C:/Users/tchv7/.pico-sdk/sdk/2.1.1/src/rp2_common/hardware_dma/include/hardware/dma.h"
+#include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "../../submodules/vrEmuTms9918/src/vrEmuTms9918.h"
@@ -252,7 +252,6 @@ static void vgaInitRgb()
   for (uint i = 0; i < RGB_PINS_COUNT; ++i)
   {
     pio_gpio_init(VGA_PIO, RGB_PINS_START + i);
-    gpio_set_drive_strength(RGB_PINS_START + i, GPIO_DRIVE_STRENGTH_8MA); 
   }
 
   // add rgb pio program
@@ -355,7 +354,9 @@ static void __isr __time_critical_func(dmaIrqHandler)(void)
     }
     dma_channel_set_read_addr(rgbDmaChan, currentBuffer, true);
 
-    pio_sm_set_pindirs_with_mask(VGA_PIO, RGB_SM, (vgaParams.scanlines && pxLineRpt != 0) - 1, (1 << 5) | (1 << 9) | (1 << 13));
+#if PICO_RP2040
+    pio_sm_set_pindirs_with_mask(VGA_PIO, RGB_SM, (vgaParams.scanlines && (currentDisplayLine & 0x01)) - 1, (1 << 5) | (1 << 9) | (1 << 13));
+#endif
 
     // need a new line every X display lines
     if (pxLineRpt == 0)
@@ -367,7 +368,7 @@ static void __isr __time_critical_func(dmaIrqHandler)(void)
 
         multicore_fifo_push_timeout_us(requestLine, 0);
 
-      if (requestLine == maxLines - 1)
+      if (requestLine == vgaParams.params.vVirtualPixels - 1)
       {
         multicore_fifo_push_timeout_us(END_OF_FRAME_MSG, 0);
       }

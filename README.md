@@ -41,6 +41,7 @@ This is a list of devices the PICO9918 has been tested and confirmed to work on.
   * [Sony HB-75](https://www.msx.org/wiki/Sony_HB-75)
   * [Toshiba HX-10](https://www.msx.org/wiki/Toshiba_HX-10)
   * [Toshiba HX-21](https://www.msx.org/wiki/Toshiba_HX-21)
+  * [Yamaha CX5M](https://www.msx.org/wiki/Yamaha_CX5M)
   * [Yamaha YIS-503](https://www.msx.org/wiki/Yamaha_YIS-503)
 * [NABU Personal Computer](https://en.wikipedia.org/wiki/NABU_Network)
 * [Powertran Cortex](http://powertrancortex.com/)
