@@ -38,7 +38,7 @@ This is a list of devices the PICO9918 has been tested and confirmed to work on.
   * [Gradiente Expert XP-800](https://www.msx.org/wiki/Gradiente_Expert_XP-800)
   * [National CF-2700](https://www.msx.org/wiki/National_CF-2700)
   * [Sharp HB-8000](https://www.msx.org/wiki/Sharp_HB-8000)
-  * [Sony HB-75](https://www.msx.org/wiki/Sony_HB-75)
+  * [Sony HB-75](https://www.msx.org/wiki/Sony_HB-75)  
   * [Toshiba HX-10](https://www.msx.org/wiki/Toshiba_HX-10)
   * [Toshiba HX-21](https://www.msx.org/wiki/Toshiba_HX-21)
   * [Yamaha CX5M](https://www.msx.org/wiki/Yamaha_CX5M)
@@ -76,6 +76,8 @@ The PICO9918 also includes F18A compatibility in firmware v1.0.0+. The video bel
 
 [![PICO9918 F18A mode preview 1 demo](https://img.visualrealmsoftware.com/youtube/thumb/TabTIPL1xQY)](https://youtu.be/TabTIPL1xQY)
 
+Pre-release firmware for F18A compatibility mode is available in [Releases](https://github.com/visrealm/pico9918/releases/tag/v1.0.1a).
+
 ## Purchasing options
 
 Fully assembled and tested PICO9918 v1.2s are available on my Tindie store:
@@ -85,6 +87,7 @@ Fully assembled and tested PICO9918 v1.2s are available on my Tindie store:
 Also (more convenient for North America)
 
 <a href="https://www.arcadeshopper.com/wp/store/#!/~/search/keyword=*PICO9918*"><img width="640" src="https://www.arcadeshopper.com/wp/wp-content/uploads/2016/01/Arcadeshopper-horizontal-Web-logo-1024x147.jpg"></img></a>
+
 
 ## Hardware
 
@@ -112,7 +115,7 @@ Schematics and Gerbers are available in [/pcb](pcb)
 
 If you're not interested in building the firmware yourself, you'll find the latest firmware in the [Releases](https://github.com/visrealm/pico9918/releases).
 
-To install, just hold the 'BOOT' button while plugging the Pico into a PC, then drag the pico9918.uf2 file on to the new USB drive which should have the volume label RPI-RP2. The Pico will restart (and disconnect) automatically.
+To install, just hold the 'BOOTSEL' (or 'BOOT') button while plugging the Pico into a PC, then drag the pico9918.uf2 file on to the new USB drive which should have the volume label RPI-RP2. The Pico will restart (and disconnect) automatically.
 
 ## Configurator
 
@@ -131,10 +134,6 @@ See the configurator in action:
 [![PICO9918 Configurator - ColecoVision](https://img.visualrealmsoftware.com/youtube/thumb/PBArYupT9qM)](https://youtu.be/PBArYupT9qM?t=9)
 
 The configurator was written in a [custom fork of CVBasic](https://github.com/visrealm/CVBasic) with the full source available in [/configtool](configtool).
-
-### Web-based Configurator
-
-If you don't have a device supported by the native configurator, the [Web-based PICO9918 Configurator](https://visrealm.github.io/pico9918/config/index.html) can be used to generate a config .uf2 file. Just drag-and-drop the resulting file onto your PICO9918 using the same method as for firmware updates.
 
 ## Building
 
@@ -158,7 +157,7 @@ Each platform requires specific toolchain installation:
 
 All platforms use **Raspberry Pi Pico SDK 2.1.1** specifically (newer versions may cause issues).
 
-**[Complete Build Instructions](BUILDING.md)** - includes detailed platform setup, development environment configuration, build options, individual platform builds, VSCode integration, and troubleshooting.
+📖 **[Complete Build Instructions](BUILDING.md)** - includes detailed platform setup, development environment configuration, build options, individual platform builds, VSCode integration, and troubleshooting.
 
 ## Thanks
 
@@ -198,7 +197,6 @@ The hardware design files in this repository are licensed under the CERN-OHL-S. 
 
 ### Firmware
 The firmware code in this repository is licensed under the MIT License. See [LICENSE_FIRMWARE.md](LICENSE_FIRMWARE.md) for details.
-
 
 
 
