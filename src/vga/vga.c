@@ -333,6 +333,7 @@ static void __isr __time_critical_func(dmaIrqHandler)(void)
   if (dma_hw->ints0 & rgbDmaChanMask)
   {
     dma_hw->ints0 = rgbDmaChanMask;
+
     currentDisplayLine++;
 
 
@@ -345,7 +346,7 @@ static void __isr __time_critical_func(dmaIrqHandler)(void)
     }
 
     uint32_t* currentBuffer = (uint32_t*)rgbDataBuffer[pxLine & 0x01];
-
+    
     // crt effect?
     if (vgaParams.scanlines && pxLineRpt != 0)
     {
@@ -363,12 +364,10 @@ static void __isr __time_critical_func(dmaIrqHandler)(void)
     {
       uint32_t requestLine = pxLine + 1;
       const uint32_t maxLines = (!bModeText80_8 ? 1 : 2) * VIRTUAL_PIXELS_Y;
-      if (requestLine >= maxLines)
-        requestLine -= maxLines;
-
+     {
         multicore_fifo_push_timeout_us(requestLine, 0);
+      }
 
-      if (requestLine == vgaParams.params.vVirtualPixels - 1)
       {
         multicore_fifo_push_timeout_us(END_OF_FRAME_MSG, 0);
       }

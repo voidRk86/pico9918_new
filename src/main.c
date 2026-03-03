@@ -454,10 +454,8 @@ static void __time_critical_func(tmsScanline)(uint16_t y, VgaParams* params, uin
   const bool bModeText80_8 = mode == TMS_MODE_TEXT80_8;
   const bool b30Columns = (TMS_REGISTER(tms9918, 0x31) & 0x40) != 0 || bModeText80_8;
   int vPixels = b30Columns ? 30 * 8 : 24 * 8;
-  if (TMS_REGISTER(tms9918, 0) & R0_DOUBLE_ROWS)
-    vPixels <<= 1;
 
-  const uint32_t vBorder = (vgaCurrentParams()->params.vVirtualPixels - vPixels) / 2;
+  const uint32_t vBorder = (VIRTUAL_PIXELS_Y - vPixels) / 2;
   if (bModeText80_8)
     vPixels *= 2;
   const bool pixelsDoubled = vrEmuTms9918DisplayMode(tms9918) != TMS_MODE_TEXT80 && !bModeText80_8;
@@ -517,7 +515,7 @@ static void __time_critical_func(tmsScanline)(uint16_t y, VgaParams* params, uin
       
       if (frameCount > SHOW_DIAGNOSTICS_FRAMES)
       {
-        tms9918->config[CONF_DIAG] = true;
+        tms9918->config[CONF_DIAG] = false;//true;
         tms9918->config[CONF_DIAG_REGISTERS] = true;
         tms9918->config[CONF_DIAG_PERFORMANCE] = true;
         tms9918->config[CONF_DIAG_PALETTE] = true;
@@ -612,19 +610,39 @@ static void __time_critical_func(tmsScanline)(uint16_t y, VgaParams* params, uin
 
     tms9918->vram.map.blanking = 1; // H
 
-    // convert all pixel data from color index to BGR16
-    while (src < end)
+    if (pixelsDoubled)
     {
-      dP [0] = pram[src[0]];
-      dP [1] = pram[src[1]];
-      dP [2] = pram[src[2]];
-      dP [3] = pram[src[3]];
-      dP [4] = pram[src[4]];
-      dP [5] = pram[src[5]];
-      dP [6] = pram[src[6]];
-      dP [7] = pram[src[7]];
-      dP += 8;
-      src += 8;
+      // convert all pixel data from color index to BGR16
+      while (src < end)
+      {
+        dP [0] = pram[src[0]];
+        dP [1] = pram[src[1]];
+        dP [2] = pram[src[2]];
+        dP [3] = pram[src[3]];
+        dP [4] = pram[src[4]];
+        dP [5] = pram[src[5]];
+        dP [6] = pram[src[6]];
+        dP [7] = pram[src[7]];
+        dP += 8;
+        src += 8;
+      }
+    }
+    else
+    {
+      while (src < end)
+      {
+        register char p80;
+        p80 = src[0]; dP [0] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[1]; dP [1] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[2]; dP [2] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[3]; dP [3] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[4]; dP [4] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[5]; dP [5] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[6]; dP [6] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        p80 = src[7]; dP [7] = (pram[p80 & 0xf] << 16) | (pram[p80 >> 4] & 0xffff);
+        dP += 8;
+        src += 8;
+      }
     }
 
     // right border
@@ -689,15 +707,6 @@ void tmsPioInit()
  */
 void proc1Entry()
 {
-  // set up gpio pins
-  gpio_init_mask(GPIO_CD_MASK | GPIO_CSR_MASK | GPIO_CSW_MASK | GPIO_MODE_MASK | GPIO_MODE1_MASK | GPIO_INT_MASK | GPIO_RESET_MASK);
-  gpio_put_all(0); // we want to kep /INT held low for now
-  gpio_set_dir_all_bits(GPIO_INT_MASK); // /INT is an output
-
-  gpio_init(25);
-  gpio_set_dir(25, true);
-  gpio_put(25, 0);
-
   tmsPioInit();
 
   gpio_put_all(GPIO_INT_MASK);	// ok, we can release /INT now
@@ -734,8 +743,6 @@ int main(void)
   gpio_put_all(0); // we want to kep /INT held low for now
   gpio_set_dir_all_bits(GPIO_INT_MASK); // /INT is an output
   gpio_set_function_masked(GPIO_CD_MASK | GPIO_CSR_MASK | GPIO_CSW_MASK | GPIO_MODE_MASK | GPIO_MODE1_MASK | GPIO_INT_MASK | GPIO_RESET_MASK, GPIO_FUNC_SIO);
-
-  //Pico9918HardwareVersion hwVersion = currentHwVersion();
 
   /* the initial "safe" clock speed */
   ClockSettings clockSettings = clockPresets[clockPresetIndex];
@@ -826,7 +833,7 @@ int main(void)
   /* then set up VGA output */
   VgaInitParams params = { 0 };
   params.params = vgaGetParams(DISPLAY_MODE);
-  setVgaParamsScaleY(&params.params, DISPLAY_YSCALE);
+  setVgaParamsScaleY(&params.params, 1);
 
   /* set vga scanline callback to generate tms9918 scanlines */
   params.scanlineFn = tmsScanline;
