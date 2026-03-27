@@ -6,6 +6,23 @@ A drop-in replacement for a classic TMS9918A VDP powered by the Raspberry Pi Pic
 
 The TMS9918A emulation is handled by my [vrEmuTms9918 library](https://github.com/visrealm/vrEmuTms9918) which is included as a submodule here
 
+## Contents
+
+* [Build status](#build-status)
+* [Supported devices](#supported-devices)
+* [Digital A/V (HDMI) Dongle](#digital-av-hdmi-dongle-new)
+* [F18A compatibility](#f18a-compatibility)
+* [Purchasing options](#purchasing-options)
+* [Hardware](#hardware)
+* [Firmware](#firmware)
+* [Configurator](#configurator)
+* [Documentation](#documentation)
+* [Building](#building)
+* [Thanks](#thanks)
+* [Discussion](#discussion)
+* [Videos](#videos)
+* [Licensing](#licensing)
+
 ## Build status
 
 ### Main Branch
@@ -69,6 +86,14 @@ If you have tested the PICO9918 on any other device, please let me know and I'll
 ### Unsupported devices
 
 So far, there aren't any. 
+
+# Digital A/V (HDMI) Dongle [NEW]
+
+The new Digital A/V dongle provides video and audio direct to any HDMI compatible display. The new dongle is fully compatible with all previous FFC-equipped PICO9918 boards (v1.2 and v1.3) and are available to purchase either with a new PICO9918 or separately.
+
+![Digital A/V dongle](img/digital_av_m.jpg)
+
+See the [FFC Connector](docs/README.md#ffc-connector) documentation for cable connection instructions.
 
 # F18A compatibility
 
@@ -135,9 +160,22 @@ See the configurator in action:
 
 The configurator was written in a [custom fork of CVBasic](https://github.com/visrealm/CVBasic) with the full source available in [/configtool](configtool).
 
+If you're not interested in building the configurator yourself, you'll find the latest builds in the [Releases](https://github.com/visrealm/pico9918/releases).
+
+### Web-based Configurator
+
+If you don't have a device supported by the native configurator, the [Web-based PICO9918 Configurator](https://visrealm.github.io/pico9918/config/index.html) can be used to generate a config .uf2 file. Just drag-and-drop the resulting file onto your PICO9918 using the same method as for firmware updates.
+
+## Documentation
+
+* [CPU and GRM jumpers](docs/README.md#cpu-and-grm-jumper)
+* [FFC Connector](docs/README.md#ffc-connector)
+* [MDE1 Pin](docs/README.md#mde1-pin)
+
 ## Building
 
-Quick start - build both firmware and configurator ROMs:
+### Quick start
+Build both firmware and configurator ROMs:
 
 ```bash
 # Automatic SDK download (recommended)
@@ -157,7 +195,9 @@ Each platform requires specific toolchain installation:
 
 All platforms use **Raspberry Pi Pico SDK 2.1.1** specifically (newer versions may cause issues).
 
-📖 **[Complete Build Instructions](BUILDING.md)** - includes detailed platform setup, development environment configuration, build options, individual platform builds, VSCode integration, and troubleshooting.
+### Detailed instructions
+
+For detailed platform setup, development environment configuration, build options, individual platform builds, VSCode integration, and troubleshooting, see [BUILDING.md](BUILDING.md)
 
 ## Thanks
 

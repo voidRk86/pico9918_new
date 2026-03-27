@@ -115,11 +115,17 @@ function(add_cvbasic_target TARGET_NAME PLATFORM_FLAG DEFINES ASM_OUTPUT ROM_OUT
         if(XAS99_SCRIPT)
             # XAS99 generates files based on the assembly filename, not the target name
             get_filename_component(ASM_NAME "${ASM_OUTPUT}" NAME_WE)
+            # Banked builds produce _b00.bin; unbanked (lite/NO_UPGRADE) produce a flat .bin
+            if("${DEFINES}" MATCHES "NO_UPGRADE")
+                set(XAS99_BIN_SUFFIX ".bin")
+            else()
+                set(XAS99_BIN_SUFFIX "_b00.bin")
+            endif()
             add_custom_command(
                 OUTPUT "${DIST_DIR}/${ROM_OUTPUT}"
                 COMMAND ${PYTHON} "${XAS99_SCRIPT}" -b -R "${ASM_DIR}/${ASM_OUTPUT}"
                 COMMAND ${PYTHON} "${LINKTICART_SCRIPT}"
-                        "${ASM_DIR}/${ASM_NAME}_b00.bin"
+                        "${ASM_DIR}/${ASM_NAME}${XAS99_BIN_SUFFIX}"
                         "${DIST_DIR}/${ROM_OUTPUT}"
                         "PICO9918 V${FRIENDLYVER}"
                 DEPENDS "${ASM_DIR}/${ASM_OUTPUT}" ${TOOL_DEPENDENCIES}
@@ -157,14 +163,17 @@ function(add_cvbasic_target TARGET_NAME PLATFORM_FLAG DEFINES ASM_OUTPUT ROM_OUT
 endfunction()
 
 # Define all platform targets
-add_cvbasic_target(ti99 "--ti994a" "" "pico9918_${VERSION}_ti99.a99" "pico9918_${VERSION}_ti99_8.bin" "TI-99/4A")
-add_cvbasic_target(ti99_f18a "--ti994a" "-dF18A_TESTING=1" "pico9918_${VERSION}_ti99_f18a.a99" "pico9918_${VERSION}_ti99_f18a_8.bin" "TI-99/4A F18A Testing")
-add_cvbasic_target(coleco "" "" "pico9918_${VERSION}_cv.asm" "pico9918_${VERSION}_cv.rom" "ColecoVision")
-add_cvbasic_target(msx_asc16 "--msx" "" "pico9918_${VERSION}_msx_asc16.asm" "pico9918_${VERSION}_msx_asc16.rom" "MSX ASCII16")
-add_cvbasic_target(msx_konami "--msx" "-konami" "pico9918_${VERSION}_msx_konami.asm" "pico9918_${VERSION}_msx_konami.rom" "MSX Konami")
-add_cvbasic_target(nabu "--nabu" "" "pico9918_${VERSION}_nabu.asm" "pico9918_${VERSION}.nabu" "NABU")
-add_cvbasic_target(creativision "--creativision" "-rom16" "pico9918_${VERSION}_crv.asm" "pico9918_${VERSION}_crv.bin" "CreatiVision")
-add_cvbasic_target(sg1000 "--sg1000" "" "pico9918_${VERSION}_sg1000.asm" "pico9918_${VERSION}_sg1000.sg" "SG-1000/SC-3000")
+add_cvbasic_target(ti99 "--ti994a" "" "pico9918conf-${VERSION_WITH_OUTPUT}_ti99.a99" "pico9918conf-${VERSION_WITH_OUTPUT}_ti99_8.bin" "TI-99/4A")
+add_cvbasic_target(ti99_lite "--ti994a" "-DNO_UPGRADE=1" "pico9918conf-${VERSION_WITH_OUTPUT}_ti99_lite.a99" "pico9918conf-${VERSION_WITH_OUTPUT}_ti99_8_lite.bin" "TI-99/4A Lite")
+add_cvbasic_target(coleco "" "" "pico9918conf-${VERSION_WITH_OUTPUT}_cv.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_cv.rom" "ColecoVision")
+add_cvbasic_target(coleco_lite "" "-DNO_UPGRADE=1" "pico9918conf-${VERSION_WITH_OUTPUT}_cv_lite.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_cv_lite.rom" "ColecoVision Lite")
+add_cvbasic_target(msx_asc16 "--msx" "" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_asc16.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_asc16.rom" "MSX ASCII16")
+add_cvbasic_target(msx_asc16_lite "--msx" "-DNO_UPGRADE=1" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_asc16_lite.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_asc16_lite.rom" "MSX ASCII16 Lite")
+add_cvbasic_target(msx_konami "--msx" "-konami" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_konami.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_konami.rom" "MSX Konami")
+add_cvbasic_target(msx_konami_lite "--msx" "-konami;-DNO_UPGRADE=1" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_konami_lite.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_msx_konami_lite.rom" "MSX Konami Lite")
+add_cvbasic_target(nabu "--nabu" "" "pico9918conf-${VERSION_WITH_OUTPUT}_nabu.asm" "pico9918conf-${VERSION_WITH_OUTPUT}.nabu" "NABU")
+add_cvbasic_target(creativision "--creativision" "-rom16" "pico9918conf-${VERSION_WITH_OUTPUT}_crv.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_crv.bin" "CreatiVision")
+add_cvbasic_target(sg1000 "--sg1000" "" "pico9918conf-${VERSION_WITH_OUTPUT}_sg1000.asm" "pico9918conf-${VERSION_WITH_OUTPUT}_sg1000.sg" "SG-1000/SC-3000")
 
 # Special NABU MAME target (different defines)
 add_cvbasic_target(nabu_mame "--nabu" "-DTMS9918_TESTING=1" "pico9918_${VERSION}_nabu_mame.asm" "000001.nabu" "NABU MAME")
@@ -184,7 +193,7 @@ add_custom_command(
 add_custom_target(nabu_mame_package DEPENDS "${CMAKE_BINARY_DIR}/dist/pico9918_${VERSION}_nabu_mame.npz")
 
 # Master target to build all platforms
-add_custom_target(configurator_all DEPENDS ti99 ti99_f18a coleco msx_asc16 msx_konami nabu creativision sg1000 nabu_mame_package)
+add_custom_target(configurator_all DEPENDS ti99 ti99_lite coleco coleco_lite msx_asc16 msx_asc16_lite msx_konami msx_konami_lite nabu sg1000 nabu_mame_package)
 
 # Print build information
 message(STATUS "PICO9918 Configurator CMake Configuration")
