@@ -40,7 +40,7 @@ static bool hwVersionDetected = false;
 static Pico9918HardwareVersion detectHardwareVersion()
 {
   Pico9918HardwareVersion version = HWVer_1_x;
-
+  return HWVer_0_3;
 #if PICO_RP2040
   // check if RESET pin is being driven externally (on v0.4+, it is, on v0.3 it isn't since it's CPUCL)
   gpio_set_dir_masked(GPIO_RESET_MASK, 0 << GPIO_RESET);  // reset input
