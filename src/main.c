@@ -39,6 +39,8 @@
 #include "hardware/clocks.h"
 #include "hardware/vreg.h"
 
+#include "ws2812.h"
+
 
 
 #define TMS_CRYSTAL_FREQ_HZ 10738635.0f
@@ -739,9 +741,12 @@ int main(void)
    * I do have code which sets the best clock baased on the chosen VGA mode,
    * but this'll do for now. */
 
-
+  ws2812_init();
+  ws2812_set_rgb(0, 64, 0);
+  sleep_ms(10);
+  ws2812_deinit();
   // set up gpio pins
-  gpio_put_all(0); // we want to kep /INT held low for now
+  gpio_put_all(0);                      // we want to kep /INT held low for now
   gpio_set_dir_all_bits(GPIO_INT_MASK); // /INT is an output
   gpio_set_function_masked(GPIO_CD_MASK | GPIO_CSR_MASK | GPIO_CSW_MASK | GPIO_MODE_MASK | GPIO_MODE1_MASK | GPIO_INT_MASK | GPIO_RESET_MASK, GPIO_FUNC_SIO);
 

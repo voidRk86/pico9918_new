@@ -12,7 +12,7 @@ set(PROGRAM ${FIRMWARE_FILE})
 
 add_executable(${PROGRAM} )
 
-target_sources(${PROGRAM} PRIVATE main.c config.c diag.c flash.c gpio.c splash.c temperature.c palette.c palette.h clocks.pio.h tms9918.pio.h palconv.pio.h)
+target_sources(${PROGRAM} PRIVATE main.c config.c diag.c flash.c gpio.c splash.c temperature.c palette.c palette.h clocks.pio.h tms9918.pio.h palconv.pio.h  ws2812.c)
 
 pico_set_program_name(${PROGRAM} "pico9918")
 pico_set_program_version(${PROGRAM} ${PICO9918_VERSION})
@@ -30,6 +30,7 @@ visrealm_generate_image_source_ram(${PROGRAM} bmp_font res/font.png )
 pico_generate_pio_header(${PROGRAM} ${CMAKE_CURRENT_LIST_DIR}/clocks.pio)
 pico_generate_pio_header(${PROGRAM} ${CMAKE_CURRENT_LIST_DIR}/palconv.pio)
 pico_generate_pio_header(${PROGRAM} ${CMAKE_CURRENT_LIST_DIR}/tms9918.pio)
+pico_generate_pio_header(${PROGRAM} ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(${PROGRAM} 0)
