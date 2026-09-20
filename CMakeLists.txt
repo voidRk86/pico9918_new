@@ -73,16 +73,11 @@ include(visrealm_cvbasic.cmake)
 
 project(pico9918 C CXX ASM)
 
-# PICO9918 Version Information
-set(PICO9918_MAJOR_VER 1)
-set(PICO9918_MINOR_VER 1)
-set(PICO9918_PATCH_VER 4)
-
 set(PICO9918_VERSION "${PICO9918_MAJOR_VER}.${PICO9918_MINOR_VER}.${PICO9918_PATCH_VER}")
 string(REPLACE "." "-" PICO9918_VERSION_STR "${PICO9918_VERSION}")
 
 # PICO9918 Build Options
-option(PICO9918_ENABLE_SCART "Enable SCART support" ON)
+option(PICO9918_ENABLE_SCART "Enable SCART support" OFF)
 option(PICO9918_NO_SPLASH "Disable splash screen" OFF)
 option(PICO9918_DIAG "Enable diagnostic mode" OFF)
 option(PICO9918_GPU_FRAME_COUNTER "Enable GPU frame counter" OFF)
