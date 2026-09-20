@@ -10,6 +10,15 @@
 ' https://github.com/visrealm/pico9918
 '
 
+#if BANK_SIZE
+' This menu lives in its own bank to keep bank 0 free for shared code
+' (dispatch, menu engine, input, firmware writer) and the firmware payload
+' (banks 2+). Only bank 0 may issue BANK SELECT, so paletteMenu cannot
+' itself call into other banks - any cross-bank work it needs must go via
+' a bank-0 trampoline. Currently it has none.
+BANK 1
+#endif
+
 paletteMenu: PROCEDURE
 
 
@@ -85,13 +94,8 @@ paletteMenu: PROCEDURE
         PRINT AT XY(25, I) , "\3\148\148\148\148\148\4"
     NEXT I
 
-    oldMenuTopRow = g_menuTopRow
-    oldIndex = g_currentMenuIndex
-
-    g_menuTopRow = MENU_TITLE_ROW + 13
-    MENU_INDEX_OFFSET = 12
-    MENU_INDEX_COUNT = 2
-    MENU_START_X = 6
+    GOSUB pushMenuCtx
+    SET_MENU_CTX(MENU_OFFSET_PALETTE, MENU_COUNT_PALETTE, 1, MENU_TITLE_ROW + 13)
     g_currentMenuIndex = 0
 
     GOSUB renderMenu
@@ -133,11 +137,13 @@ paletteMenu: PROCEDURE
                     currentColor(0) = $f0 OR rgb(0)
                     currentColor(1) = cc1
 
-                    VDP_REG(47) = $c0 + currentIndex' palette data port from pal 2 index #10
+                    ' write the new color to the target palette (page 0)
+                    ' and to the UI's live-preview slot (page 1 entry 1)
+                    PAL_PORT(PAL_PAGE_TARGET, currentIndex)
                     DEFINE VRAM 0, 2, VARPTR currentColor(0)
-                    VDP_REG(47) = $c0 + 16 + 1 ' palette data port from pal 2 index #10
+                    PAL_PORT(PAL_PAGE_UI, PAL_UI_PREVIEW)
                     DEFINE VRAM 0, 2, VARPTR currentColor(0)
-                    VDP_REG(47) = $40
+                    PAL_PORT_END
 
                     ' update config palette
                     IDX = 128 + currentIndex * 2
@@ -164,8 +170,16 @@ paletteMenu: PROCEDURE
         GOSUB updateNavInput
 
         IF (CONT1.KEY > 0 AND CONT1.KEY < 3) THEN
+            GOSUB hideSprites
             currentMenu = CONT1.KEY + 3
-            g_nav = NAV_OK
+            ' sync and re-render so the highlight follows the digit-selected row
+            ' immediately, and any rendering this iteration uses the correct index
+            g_currentMenuIndex = currentMenu + MENU_INDEX_OFFSET - 4
+            GOSUB renderMenu
+            ' "<<< Main menu" row activates immediately like the main menu does
+            IF MENU_DATA(g_currentMenuIndex, CONF_INDEX) = CONF_MENU_CANCEL THEN
+                g_nav = NAV_CANCEL
+            END IF
         END IF
 
         IF currentMenu = 0 THEN
@@ -195,7 +209,7 @@ paletteMenu: PROCEDURE
                 rgb(rgbIndex) = rgb(rgbIndex) - 1
             ELSEIF NAV(NAV_RIGHT) AND rgb(rgbIndex) < 15 THEN
                 rgb(rgbIndex) = rgb(rgbIndex) + 1
-            ELSEIF g_key > 0 AND g_key < 16 THEN
+            ELSEIF g_key < 16 THEN
                 rgb(rgbIndex) = g_key
             END IF
         ELSE
@@ -204,8 +218,20 @@ paletteMenu: PROCEDURE
                 IF (currentMenu > (3 + MENU_INDEX_COUNT)) THEN currentMenu = 0
             ELSEIF NAV(NAV_UP) THEN
                 currentMenu = currentMenu - 1
-            ELSEIF g_nav THEN
-                IF currentMenu = 4 THEN' reset
+            ELSEIF currentMenu = 4 THEN
+                presetChanged = FALSE
+
+                IF NAV(NAV_LEFT) THEN
+                    IF g_palettePreset = 0 THEN g_palettePreset = OPT_COUNT_PALETTE
+                    g_palettePreset = g_palettePreset - 1
+                    presetChanged = TRUE
+                ELSEIF NAV(NAV_OK OR NAV_RIGHT) THEN
+                    g_palettePreset = g_palettePreset + 1
+                    IF g_palettePreset >= OPT_COUNT_PALETTE THEN g_palettePreset = 0
+                    presetChanged = TRUE
+                END IF
+
+                IF presetChanged THEN
                     GOSUB resetPalette
                 ELSEIF currentMenu = 5 THEN' back
                     g_nav = NAV_CANCEL
@@ -234,9 +260,7 @@ paletteMenu: PROCEDURE
         END IF
     NEXT I
 
-    g_menuTopRow = oldMenuTopRow
-    g_currentMenuIndex = oldIndex
-
+    GOSUB popMenuCtx
     SET_MENU(MENU_ID_MAIN)
     END
 
@@ -259,10 +283,10 @@ updateRGB: PROCEDURE
     rgb(1) = currentColor(1) / 16
     rgb(2) = currentColor(1) AND $0f
 
-    ' update live palette
-    VDP_REG(47) = $c0 + 16 + 1 ' palette data port from pal 2 index #10
+    ' refresh the UI's live-preview slot with the newly-selected swatch
+    PAL_PORT(PAL_PAGE_UI, PAL_UI_PREVIEW)
     DEFINE VRAM 0, 2, VARPTR currentColor(0)
-    VDP_REG(47) = $40
+    PAL_PORT_END
 
     GOSUB renderSliders                
 
@@ -296,21 +320,14 @@ renderSliders: PROCEDURE
     NEXT I
     END
 
+CONST PALETTE_BYTES = 32
+
 resetPalette: PROCEDURE
     WAIT
 
     GOSUB hideSprites
 
-    VDP_REG(47) = $c0 ' palette data port from pal 2 index #10
-    DEFINE VRAM 0, 32, defPal
-    DEFINE VRAM 0, 32, defPal
-    VDP_REG(47) = $40
-
-    ' update config palette
-    FOR I = 0 TO 31
-        VDP_CONFIG(128 + I) = defPal(I)
-        tempConfigValues(128 + I) = defPal(I)
-    NEXT I
+    GOSUB applyPreset
 
     I = currentIndex
     FOR currentIndex = 1 TO 15
@@ -323,21 +340,130 @@ resetPalette: PROCEDURE
 
     END
 
+detectPalettePreset: PROCEDURE
+    g_palettePreset = 0
+
+    FOR P = 0 TO OPT_COUNT_PALETTE - 1
+        paletteMatch = TRUE
+        palOffset = P * PALETTE_BYTES
+        FOR I = 0 TO 31
+            IF tempConfigValues(128 + I) <> palettePresets(palOffset + I) THEN
+                paletteMatch = FALSE
+                EXIT FOR
+            END IF
+        NEXT I
+        IF paletteMatch THEN
+            g_palettePreset = P
+            RETURN
+        END IF
+    NEXT P
+    END
+
+applyPreset: PROCEDURE
+    palOffset = g_palettePreset * PALETTE_BYTES
+
+    PAL_PORT(PAL_PAGE_TARGET, 0)
+    DEFINE VRAM 0, 32, VARPTR palettePresets(palOffset)
+    PAL_PORT_END
+
+    FOR I = 0 TO 31
+        VDP_CONFIG(128 + I) = palettePresets(palOffset + I)
+        tempConfigValues(128 + I) = palettePresets(palOffset + I)
+    NEXT I
+    END
+
+' Palette presets - contiguous block, PALETTE_BYTES each
+' Order must match menu value labels in menu-main.bas
+
+palettePresets:
 defPal:
-  DATA BYTE $00, $00
-  DATA BYTE $F0, $00
-  DATA BYTE $F2, $C3
-  DATA BYTE $F5, $D6
-  DATA BYTE $F5, $4F
-  DATA BYTE $F7, $6F
-  DATA BYTE $FD, $54
-  DATA BYTE $F4, $EF
-  DATA BYTE $FF, $54
-  DATA BYTE $FF, $76
-  DATA BYTE $FD, $C3
-  DATA BYTE $FE, $D6
-  DATA BYTE $F2, $B2
-  DATA BYTE $FC, $5C
-  DATA BYTE $FC, $CC
-  DATA BYTE $FF, $FF
+' TMS9918A (default)
+    DATA BYTE $00, $00
+    DATA BYTE $F0, $00
+    DATA BYTE $F2, $C3
+    DATA BYTE $F5, $D6
+    DATA BYTE $F5, $4F
+    DATA BYTE $F7, $6F
+    DATA BYTE $FD, $54
+    DATA BYTE $F4, $EF
+    DATA BYTE $FF, $54
+    DATA BYTE $FF, $76
+    DATA BYTE $FD, $C3
+    DATA BYTE $FE, $D6
+    DATA BYTE $F2, $B2
+    DATA BYTE $FC, $5C
+    DATA BYTE $FC, $CC
+    DATA BYTE $FF, $FF
+
+' V9938
+    DATA BYTE $00, $00
+    DATA BYTE $F0, $00
+    DATA BYTE $F2, $C2
+    DATA BYTE $F6, $E6
+    DATA BYTE $F2, $2E
+    DATA BYTE $F4, $6E
+    DATA BYTE $FA, $22
+    DATA BYTE $F4, $CE
+    DATA BYTE $FE, $22
+    DATA BYTE $FE, $66
+    DATA BYTE $FC, $C2
+    DATA BYTE $FC, $C8
+    DATA BYTE $F2, $82
+    DATA BYTE $FC, $4A
+    DATA BYTE $FA, $AA
+    DATA BYTE $FE, $EE
+
+' Greyscale
+    DATA BYTE $00, $00
+    DATA BYTE $F0, $00
+    DATA BYTE $F6, $66
+    DATA BYTE $F8, $88
+    DATA BYTE $F8, $88
+    DATA BYTE $F9, $99
+    DATA BYTE $F7, $77
+    DATA BYTE $FB, $BB
+    DATA BYTE $F8, $88
+    DATA BYTE $F9, $99
+    DATA BYTE $F9, $99
+    DATA BYTE $FB, $BB
+    DATA BYTE $F5, $55
+    DATA BYTE $FA, $AA
+    DATA BYTE $FC, $CC
+    DATA BYTE $FF, $FF
+
+' Sepia
+    DATA BYTE $00, $00
+    DATA BYTE $F0, $00
+    DATA BYTE $F6, $43
+    DATA BYTE $F8, $65
+    DATA BYTE $F8, $65
+    DATA BYTE $F9, $76
+    DATA BYTE $F7, $54
+    DATA BYTE $FB, $A9
+    DATA BYTE $F8, $65
+    DATA BYTE $F9, $76
+    DATA BYTE $F9, $76
+    DATA BYTE $FB, $A9
+    DATA BYTE $F5, $32
+    DATA BYTE $FA, $97
+    DATA BYTE $FC, $B9
+    DATA BYTE $FF, $ED
+
+' EGA
+    DATA BYTE $00, $00
+    DATA BYTE $F0, $0A
+    DATA BYTE $F0, $A0
+    DATA BYTE $F0, $AA
+    DATA BYTE $FA, $00
+    DATA BYTE $FA, $0A
+    DATA BYTE $FA, $50
+    DATA BYTE $FA, $AA
+    DATA BYTE $F5, $55
+    DATA BYTE $F5, $5F
+    DATA BYTE $F5, $F5
+    DATA BYTE $F5, $FF
+    DATA BYTE $FF, $55
+    DATA BYTE $FF, $5F
+    DATA BYTE $FF, $F5
+    DATA BYTE $FF, $FF
 

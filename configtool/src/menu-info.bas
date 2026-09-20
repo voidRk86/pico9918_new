@@ -12,31 +12,23 @@
 
 
 deviceInfoMenu: PROCEDURE
-    const PICO_MODEL_RP2040 = 1
-    const PICO_MODEL_RP2350 = 2
-
-    g_menuTopRow = MENU_TITLE_ROW + 3
-
 
     DRAW_TITLE("DEVICE INFO")
 
-    oldMenuTopRow = g_menuTopRow
-    oldIndex = g_currentMenuIndex
-
-    g_menuTopRow = MENU_TITLE_ROW + 14
-    MENU_INDEX_OFFSET = 13
-    MENU_INDEX_COUNT = 1
-    MENU_START_X = 6
+    GOSUB pushMenuCtx
+    SET_MENU_CTX(MENU_OFFSET_INFO, MENU_COUNT_INFO, 6, MENU_TITLE_ROW + 14)
     g_currentMenuIndex = MENU_INDEX_OFFSET
 
     GOSUB renderMenu
 
-    g_menuTopRow = oldMenuTopRow
+    ' the rest of this menu uses g_menuTopRow as the top row for device info
+    ' text (a different anchor than the "<<< Main menu" row drawn above).
+    g_menuTopRow = MENU_TITLE_ROW + 3
 
     #addr = XY(2, g_menuTopRow)
     PRINT AT #addr,       "Processor family : "
     PRINT AT #addr + 32,  "Hardware version : "
-    PRINT AT #addr + 64,  "Software version : "
+    PRINT AT #addr + 64,  "Firmware version : "
     PRINT AT #addr + 96,  "Display driver   : "
     PRINT AT #addr + 128, "Resolution       : "
     PRINT AT #addr + 160, "F18A version     : "
@@ -54,12 +46,14 @@ deviceInfoMenu: PROCEDURE
         PRINT "040"
     END IF
 
+    PRINT AT #addr + 31, " "
     VDP_REG(58) = CONF_HW_VERSION
     optValue = VDP_STATUS
     tmpMajor = optValue / 16
     tmpMinor = optValue AND $0f
-    PRINT AT  #addr + 32, tmpMajor, ".", tmpMinor
-    IF verMajor = 1 THEN PRINT AT XY(24, g_menuTopRow + 1), "+"
+    IF picoModel = PICO_MODEL_RP2350 THEN PRINT "PRO "
+    PRINT "v", tmpMajor, "."
+    IF hwMinor = 0 THEN PRINT "x" ELSE PRINT hwMinor
 
     VDP_REG(58) = CONF_SW_VERSION
     optValue = VDP_STATUS
@@ -67,7 +61,7 @@ deviceInfoMenu: PROCEDURE
     tmpMinor = optValue AND $0f
     VDP_REG(58) = CONF_SW_PATCH_VERSION
     tmpPatch = VDP_STATUS
-    PRINT AT #addr + 64, tmpMajor, ".", tmpMinor, ".", tmpPatch
+    PRINT AT #addr + 64, "v", tmpMajor, ".", tmpMinor, ".", tmpPatch
 
     VDP_REG(58) = CONF_DISP_DRIVER
     optValue = VDP_STATUS
@@ -79,7 +73,7 @@ deviceInfoMenu: PROCEDURE
         PRINT AT #addr, "RGBs PAL"
         PRINT AT #addr + 32, "576i 50Hz"
     ELSE
-        PRINT AT #addr, "VGA"
+        PRINT AT #addr, "VGA/HDMI"
         PRINT AT #addr + 32, "480p 60Hz"
     END IF
 
@@ -126,8 +120,7 @@ deviceInfoMenu: PROCEDURE
         VDP_ENABLE_INT
     WEND
 
-    g_currentMenuIndex = oldIndex
-
+    GOSUB popMenuCtx
     SET_MENU(MENU_ID_MAIN)
 
     END

@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PICO9918 Configuration Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #5544ff;       /* matches title image underline */
+            --primary-hover: #6e60ff;
+            --secondary-color: #6b7280;
+            --background: #000000;          /* match title image background */
+            --card-background: #141414;
+            --border-color: #2a2a2a;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a0a0a0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 12px 0 0;
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .container {
+            width: 1024px;                  /* match title image width exactly */
+            margin: 0 auto;
+            padding: 0 20px 180px;          /* leave room for taller sticky footer */
+        }
+
+        /* Title image: render at native 1024px, no scaling/interpolation. */
+        header {
+            margin: 0 -20px 30px;           /* span container padding so image bleeds edge-to-edge on wider viewports */
+            text-align: center;
+            background: #000;
+            overflow-x: auto;               /* horizontal scroll on narrow viewports rather than scaling */
+        }
+
+        .title-image {
+            display: block;
+            margin: 0 auto;
+            width: 1024px;
+            height: auto;
+            max-width: none;                /* prevent shrinking */
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .footer-meta {
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            color: var(--text-primary);
+            font-size: 1.25em;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible::before {
+            content: '▼';
+            display: inline-block;
+            transition: transform 0.3s;
+            font-size: 0.8em;
+        }
+
+        .collapsible.collapsed::before {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group > label {
+            flex: 0 0 220px;            /* fixed-width left column */
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        /* control column: select / checkbox-option / radio-group fills remaining width */
+        .form-group > select,
+        .form-group > .checkbox-option,
+        .form-group > .checkbox-group,
+        .form-group > .radio-group {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        /* bare checkbox sits left-aligned in the control column rather than stretching */
+        .form-group > input[type="checkbox"] {
+            flex: 0 0 auto;
+            margin-right: auto;
+        }
+
+        /* info-box wraps to its own line below the row */
+        .form-group > .info-box {
+            flex-basis: 100%;
+        }
+
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="radio"], input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1em;
+            background: var(--card-background);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        select option {
+            background: var(--card-background);
+            color: var(--text-primary);
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+            max-width: 750px;
+        }
+
+        .color-picker-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--card-background);
+        }
+
+        .color-picker-item.disabled {
+            opacity: 0.6;
+            background: var(--background);
+        }
+
+        .color-picker-item label {
+            font-weight: 500;
+            margin-bottom: 0;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        input[type="color"] {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="color"]:disabled {
+            cursor: not-allowed;
+        }
+
+        .color-value {
+            font-family: monospace;
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .info-box {
+            background: #0a1530;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            color: #e5e5e5;
+        }
+
+        .warning-box {
+            background: #3d2e1a;
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            color: #e5e5e5;
+        }
+
+        .summary {
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary h3 {
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .palette-swatches {
+            display: inline-flex;
+            gap: 2px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .palette-swatch {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            display: inline-block;
+        }
+
+        .card p a {
+            color: var(--primary-color);
+        }
+
+        .card code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: rgba(85, 68, 255, 0.12);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.95em;
+        }
+
+        .sticky-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-background);
+            border-top: 2px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .footer-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .form-group > label {
+                flex-basis: 100%;       /* stack label above control on narrow screens */
+            }
+
+            .palette-grid {
+                grid-template-columns: repeat(4, 1fr);
+                max-width: 100%;
+            }
+
+            .footer-content {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .palette-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="configurator_title.png" alt="PICO9918 v1.2.0 Configurator" class="title-image">
+        </header>
+
+        <!-- Target firmware banner -->
+        <div class="warning-box" style="margin-bottom: 20px;">
+            <strong>Firmware v<span id="fwVersion"></span> required.</strong>
+            This configurator targets the latest PICO9918 firmware. Update your
+            device to v<span id="fwVersionInline"></span> before applying a
+            generated config &mdash; older firmware may ignore these settings or
+            reset the device to defaults.
+            <a href="https://github.com/visrealm/pico9918/releases" target="_blank">Get the latest firmware &rarr;</a>
+        </div>
+
+        <!-- Main -->
+        <div class="card">
+            <h2>Main</h2>
+            <div class="form-group">
+                <label for="vdpDevice">VDP Device</label>
+                <select id="vdpDevice" name="vdpDevice">
+                    <option value="0" selected>TMS9918A - GROMCLK + CPUCLK (Default)</option>
+                    <option value="1">TMS992xA - GROMCLK only</option>
+                    <option value="2">TMS9118 - CPUCLK only</option>
+                    <option value="3">TMS912x - CPUCLK on pin 37</option>
+                </select>
+                <div class="info-box">
+                    <strong>Note:</strong> Controls which clock signals are output on pins 37 and 38.
+                    Select the VDP chip model that matches your original hardware for correct clock behavior.
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="scanlines">CRT Scanlines</label>
+                <input type="checkbox" id="scanlines" name="scanlines">
+            </div>
+            <div class="form-group">
+                <label for="scanlineSprites">Scanline Sprites</label>
+                <select id="scanlineSprites" name="scanlineSprites">
+                    <option value="0" selected>4 sprites per scanline</option>
+                    <option value="1">8 sprites per scanline</option>
+                    <option value="2">16 sprites per scanline</option>
+                    <option value="3">32 sprites per scanline</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="clockPreset">Clock Frequency</label>
+                <select id="clockPreset" name="clockPreset">
+                    <option value="0" selected>252.0 MHz (Default)</option>
+                    <option value="1">302.4 MHz</option>
+                    <option value="2">352.0 MHz</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Output -->
+        <div class="card">
+            <h2 class="collapsible" onclick="toggleSection('outputSection')">Output</h2>
+            <div id="outputSection" class="collapsible-content collapsed">
+                <div class="form-group">
+                    <label for="dispDriverPref">Driver</label>
+                    <select id="dispDriverPref" name="dispDriverPref">
+                        <option value="0" selected>Auto (detect dongle)</option>
+                        <option value="1">VGA / HDMI (force)</option>
+                        <option value="2">SCART RGBs (force)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="vgaMode">VGA-HDMI Mode</label>
+                    <select id="vgaMode" name="vgaMode">
+                        <option value="0" selected>480p @ 60Hz</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scartMode">SCART Mode</label>
+                    <select id="scartMode" name="scartMode">
+                        <option value="0" selected>576i @ 50Hz (PAL)</option>
+                        <option value="1">480i @ 60Hz (NTSC)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnostics -->
+        <div class="card">
+            <h2 class="collapsible" onclick="toggleSection('diagSection')">Diagnostics (Optional)</h2>
+            <div id="diagSection" class="collapsible-content collapsed">
+                <div class="warning-box">
+                    <strong>Warning:</strong> Diagnostic modes are for debugging purposes and may affect performance.
+                </div>
+                <div class="form-group">
+                    <label for="diagRegisters">Show Registers</label>
+                    <input type="checkbox" id="diagRegisters" name="diagRegisters">
+                </div>
+                <div class="form-group">
+                    <label for="diagPerformance">Show Performance</label>
+                    <input type="checkbox" id="diagPerformance" name="diagPerformance">
+                </div>
+                <div class="form-group">
+                    <label for="diagPalette">Show Palette Info</label>
+                    <input type="checkbox" id="diagPalette" name="diagPalette">
+                </div>
+                <div class="form-group">
+                    <label for="diagAddress">Show Address Info</label>
+                    <input type="checkbox" id="diagAddress" name="diagAddress">
+                </div>
+            </div>
+        </div>
+
+        <!-- Palette -->
+        <div class="card">
+            <h2 class="collapsible" onclick="toggleSection('paletteSection')">Palette (Optional)</h2>
+            <div id="paletteSection" class="collapsible-content collapsed">
+                <p>Customize the TMS9918A color palette. Color 0 (transparent) is always black.</p>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="palettePreset">Palette Preset</label>
+                    <select id="palettePreset" name="palettePreset" onchange="applyPalettePreset()">
+                        <option value="tms9918a" selected>TMS9918A (Default)</option>
+                        <option value="v9938">V9938</option>
+                        <option value="grey">Greyscale</option>
+                        <option value="sepia">Sepia</option>
+                        <option value="ega">EGA</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+
+                <div class="palette-grid" id="paletteGrid"></div>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="card">
+            <h2>How to Apply</h2>
+            <p>The generated UF2 contains <strong>only your settings</strong> &mdash; not the firmware itself.
+            Drag and drop it onto your PICO9918 the same way you'd flash firmware (hold BOOTSEL while
+            connecting USB, then copy the file to the <code>RPI-RP2</code> / <code>RP2350</code> drive).
+            Your existing firmware stays in place; only the configuration block in flash is updated.</p>
+            <p style="margin-top: 12px;">If you've already flashed firmware on the device, applying a config UF2
+            won't downgrade or replace it. To update firmware itself, grab the latest release UF2 from
+            <a href="https://github.com/visrealm/pico9918/releases" target="_blank">GitHub</a>.</p>
+        </div>
+
+        <!-- Configuration Summary -->
+        <div class="card">
+            <h2>Configuration Summary</h2>
+            <div class="summary" id="configSummary"></div>
+        </div>
+    </div>
+
+    <!-- Sticky Footer with Action Buttons -->
+    <div class="sticky-footer">
+        <div class="footer-content">
+            <button type="button" class="btn-primary" onclick="generateAndDownload()">Generate & Download UF2</button>
+            <button type="button" class="btn-secondary" onclick="resetToDefaults()">Reset to Defaults</button>
+        </div>
+        <div class="footer-meta">
+            <p class="subtitle">Generate custom configuration UF2 files for your PICO9918 or PICO9918 PRO</p>
+            <div class="links">
+                <a href="https://github.com/visrealm/pico9918" target="_blank">GitHub Repository</a>
+                <a href="https://github.com/visrealm/pico9918/releases" target="_blank">Firmware Releases</a>
+                <a href="https://atariage.com/forums/topic/323020-pico9918-drop-in-replacement-for-tms9918a" target="_blank">AtariAge Forum</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants from config.h
+        const CONFIG_BYTES = 256;
+        const CONFIG_FLASH_OFFSET = 0x1FF000;
+        const XIP_BASE = 0x10000000;
+        const CONFIG_FLASH_ADDR = XIP_BASE + CONFIG_FLASH_OFFSET;
+
+        // Pending display-change block: separate 4 KB sector immediately below
+        // the main config block (config.c PENDING_FLASH_OFFSET). The firmware
+        // reads a 16-byte PendingDisplay struct from its start on boot and, if
+        // the state is PENDING/ARMED, overrides the tracked display fields in
+        // the main config. A config UF2 that writes only the main block leaves
+        // a stale pending block in place, so the chosen display settings never
+        // take effect. We write a CONFIRMED block here to clear that.
+        //
+        // The RP2350 bootloader requires every flash-targeted UF2 block to carry
+        // a 256-byte payload at a 256-byte-aligned address; a short (16-byte)
+        // payload is rejected and fails the whole file. So the pending payload is
+        // a full 256-byte page (16 meaningful bytes + zero padding), matching the
+        // main config block's payload size.
+        const PENDING_FLASH_OFFSET = CONFIG_FLASH_OFFSET - 0x1000; // 0x1FE000
+        const PENDING_FLASH_ADDR = XIP_BASE + PENDING_FLASH_OFFSET;
+        const PENDING_PAYLOAD_BYTES = 256;        // full page (RP2350 requirement)
+        const PENDING_STATE_CONFIRMED = 0xC0;
+
+        // Configuration byte offsets (must match src/config.h)
+        const CONF_PICO_MODEL = 0;
+        const CONF_HW_VERSION = 1;
+        const CONF_SW_VERSION = 2;
+        const CONF_SW_PATCH_VERSION = 3;
+        const CONF_CLOCK_TESTED = 4;
+        const CONF_DISP_DRIVER = 5;
+        const CONF_FLASH_STATUS = 6;
+        const CONF_CRT_SCANLINES = 8;
+        const CONF_SCANLINE_SPRITES = 9;
+        const CONF_CLOCK_PRESET_ID = 10;
+        const CONF_SCART_MODE = 11;        // 0 = PAL 576i, 1 = NTSC 480i
+        const CONF_VDP_DEVICE = 12;
+        const CONF_DISP_DRIVER_PREF = 13;  // 0 = AUTO, 1 = force VGA, 2 = force SCART
+        const CONF_VGA_MODE = 14;          // 0 = 480p60 (only valid value currently)
+        const CONF_DIAG = 16;
+        const CONF_DIAG_REGISTERS = 17;
+        const CONF_DIAG_PERFORMANCE = 18;
+        const CONF_DIAG_PALETTE = 19;
+        const CONF_DIAG_ADDRESS = 20;
+        const CONF_PALETTE_IDX_0 = 128;
+
+        // ---------------------------------------------------------------------
+        // TARGET FIRMWARE VERSION - the single value to bump each release.
+        // ---------------------------------------------------------------------
+        // This configurator targets the LATEST firmware only. This one constant
+        // drives (a) the on-screen version banner/summary and (b) the version
+        // bytes stamped into the config block.
+        //
+        // The firmware stamps SW_VERSION = (major << 4) | minor and
+        // SW_PATCH_VERSION = patch on save (config.c). readConfig() compares the
+        // stored version against the running firmware's; if they differ it runs
+        // migrateNewFields(), which resets every field introduced after the
+        // stored version to its default. A config block left at version 0 (as
+        // this tool once emitted) therefore has ALL fields reset to default on
+        // first boot - the user's chosen settings never apply. Stamping the
+        // target version keeps storedVer == firmware version and skips migration.
+        //
+        // On release, bump this to match PICO9918_*_VER in CMakeLists.txt AND
+        // regenerate configurator_title.png (the title image bakes in the
+        // version text).
+        const FW_MAJOR = 1;
+        const FW_MINOR = 2;
+        const FW_PATCH = 0;
+        const FW_VERSION_STR = `${FW_MAJOR}.${FW_MINOR}.${FW_PATCH}`;
+        const CONF_SW_VERSION_VALUE = ((FW_MAJOR << 4) | FW_MINOR) & 0xFF;
+        const CONF_SW_PATCH_VALUE = FW_PATCH & 0xFF;
+
+        // UF2 constants
+        const UF2_MAGIC_START0 = 0x0A324655;
+        const UF2_MAGIC_START1 = 0x9E5D5157;
+        const UF2_MAGIC_END = 0x0AB16F30;
+        const UF2_FLAG_FAMILYID = 0x00002000;
+
+        // Family IDs and models
+        const FAMILY_ID_RP2040 = 0xe48bff56;
+        const FAMILY_ID_RP2350 = 0xe48bff59;
+        const PICO_MODEL_RP2040 = 1;
+        const PICO_MODEL_RP2350 = 2;
+
+        // Hardware versions (Pico9918HardwareVersion enum)
+        const HW_VER_1_X = 0x10;  // v1.x single board (RP2040)
+        const HW_VER_2_X = 0x20;  // v2.x PRO (RP2350)
+
+        // Display drivers
+        const DISP_DRIVER_VGA = 0;
+        const DISP_DRIVER_NTSC = 1;
+        const DISP_DRIVER_PAL = 2;
+
+        // TMS9918A palette (0xARGB format)
+        const PALETTE_TMS9918A = [
+            0x0000, 0xF000, 0xF2C3, 0xF5D6, 0xF54F, 0xF76F, 0xFD54, 0xF4EF,
+            0xFF54, 0xFF76, 0xFDC3, 0xFED6, 0xF2B2, 0xFC5C, 0xFCCC, 0xFFFF
+        ];
+
+        // V9938 palette
+        const PALETTE_V9938 = [
+            0x0000, 0xF000, 0xF2C2, 0xF6E6, 0xF22E, 0xF46E, 0xFA22, 0xF4CE,
+            0xFE22, 0xFE66, 0xFCC2, 0xFCC8, 0xF282, 0xFC4A, 0xFAAA, 0xFEEE
+        ];
+
+        // Greyscale palette
+        const PALETTE_GREY = [
+            0x0000, 0xF000, 0xF666, 0xF888, 0xF888, 0xF999, 0xF777, 0xFBBB,
+            0xF888, 0xF999, 0xF999, 0xFBBB, 0xF555, 0xFAAA, 0xFCCC, 0xFFFF
+        ];
+
+        // Sepia palette (warm brown tones)
+        const PALETTE_SEPIA = [
+            0x0000, 0xF000, 0xF643, 0xF865, 0xF865, 0xF976, 0xF754, 0xFBA9,
+            0xF865, 0xF976, 0xF976, 0xFBA9, 0xF532, 0xFA97, 0xFCB9, 0xFFED
+        ];
+
+        // EGA palette (IBM Enhanced Graphics Adapter)
+        const PALETTE_EGA = [
+            0x0000, 0xF00A, 0xF0A0, 0xF0AA, 0xFA00, 0xFA0A, 0xFA50, 0xFAAA,
+            0xF555, 0xF55F, 0xF5F5, 0xF5FF, 0xFF55, 0xFF5F, 0xFFF5, 0xFFFF
+        ];
+
+        // All available palettes
+        const PALETTES = {
+            'tms9918a': { name: 'TMS9918A (Default)', colors: PALETTE_TMS9918A },
+            'v9938': { name: 'V9938', colors: PALETTE_V9938 },
+            'grey': { name: 'Greyscale', colors: PALETTE_GREY },
+            'sepia': { name: 'Sepia', colors: PALETTE_SEPIA },
+            'ega': { name: 'EGA', colors: PALETTE_EGA }
+        };
+
+        // Current palette (working copy)
+        let currentPalette = [...PALETTE_TMS9918A];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fill the target-firmware version everywhere it is shown
+            document.getElementById('fwVersion').textContent = FW_VERSION_STR;
+            document.getElementById('fwVersionInline').textContent = FW_VERSION_STR;
+
+            initializePaletteEditor();
+            updateSummary();
+
+            // Add event listeners for live updates
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', updateSummary);
+            });
+        });
+
+        // Initialize palette editor
+        function initializePaletteEditor() {
+            const grid = document.getElementById('paletteGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 16; i++) {
+                const item = document.createElement('div');
+                item.className = 'color-picker-item' + (i === 0 ? ' disabled' : '');
+
+                const label = document.createElement('label');
+                label.textContent = `${i}`;
+                label.htmlFor = `color${i}`;
+
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.id = `color${i}`;
+                input.value = rgb12ToHex(currentPalette[i]);
+                input.disabled = i === 0; // Color 0 is always black
+                input.title = i === 0 ? 'Transparent (always black)' : `Color ${i}`;
+
+                const valueSpan = document.createElement('div');
+                valueSpan.className = 'color-value';
+                valueSpan.id = `value${i}`;
+                valueSpan.textContent = formatRgb12(currentPalette[i]);
+
+                if (i !== 0) {
+                    input.addEventListener('input', function() {
+                        // Convert to 4-bit and back to ensure proper rounding
+                        const rgb12 = hexToRgb12(this.value);
+                        currentPalette[i] = rgb12;
+
+                        // Update the color picker to show the rounded value
+                        this.value = rgb12ToHex(rgb12);
+
+                        // Update the RGB value display
+                        document.getElementById(`value${i}`).textContent = formatRgb12(rgb12);
+
+                        // Manual edit -> drop preset selection to "Custom"
+                        document.getElementById('palettePreset').value = 'custom';
+
+                        updateSummary();
+                    });
+                }
+
+                item.appendChild(label);
+                item.appendChild(input);
+                item.appendChild(valueSpan);
+                grid.appendChild(item);
+            }
+        }
+
+        // Toggle collapsible sections
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const header = section.previousElementSibling;
+            section.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+
+        // Apply selected palette preset
+        function applyPalettePreset() {
+            const presetId = document.getElementById('palettePreset').value;
+            if (presetId === 'custom') return;  // "Custom" reflects state, not a preset to apply
+            const palette = PALETTES[presetId].colors;
+            currentPalette = [...palette];
+
+            // Update all color pickers to reflect the new palette
+            for (let i = 1; i < 16; i++) {
+                document.getElementById(`color${i}`).value = rgb12ToHex(currentPalette[i]);
+                document.getElementById(`value${i}`).textContent = formatRgb12(currentPalette[i]);
+            }
+            updateSummary();
+        }
+
+        // Format RGB12 for display
+        function formatRgb12(rgb12) {
+            const r = (rgb12 >> 8) & 0x0F;
+            const g = (rgb12 >> 4) & 0x0F;
+            const b = rgb12 & 0x0F;
+            return `${r.toString(16).toUpperCase()}${g.toString(16).toUpperCase()}${b.toString(16).toUpperCase()}`;
+        }
+
+        // Reset all settings to defaults
+        function resetToDefaults() {
+            document.getElementById('scanlines').checked = false;
+            document.getElementById('scanlineSprites').value = '0';
+            document.getElementById('clockPreset').value = '0';
+            document.getElementById('vdpDevice').value = '0';
+            document.getElementById('diagRegisters').checked = false;
+            document.getElementById('diagPerformance').checked = false;
+            document.getElementById('diagPalette').checked = false;
+            document.getElementById('diagAddress').checked = false;
+            document.getElementById('palettePreset').value = 'tms9918a';
+            applyPalettePreset();
+        }
+
+        // Convert 0xARGB to #RRGGBB
+        function rgb12ToHex(rgb12) {
+            const r = ((rgb12 >> 8) & 0x0F) * 17;
+            const g = ((rgb12 >> 4) & 0x0F) * 17;
+            const b = (rgb12 & 0x0F) * 17;
+            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Convert #RRGGBB to 0xFRGB
+        function hexToRgb12(hex) {
+            const r = parseInt(hex.substr(1, 2), 16);
+            const g = parseInt(hex.substr(3, 2), 16);
+            const b = parseInt(hex.substr(5, 2), 16);
+            return 0xF000 | ((Math.round(r / 17) & 0x0F) << 8) |
+                            ((Math.round(g / 17) & 0x0F) << 4) |
+                             (Math.round(b / 17) & 0x0F);
+        }
+
+        // Format RGB12 for display
+        function formatRgb12(rgb12) {
+            return '0x' + rgb12.toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        // Get current configuration from form
+        function getCurrentConfig() {
+            return {
+                dispDriverPref: parseInt(document.getElementById('dispDriverPref').value),
+                vgaMode: parseInt(document.getElementById('vgaMode').value),
+                scartMode: parseInt(document.getElementById('scartMode').value),
+                scanlines: document.getElementById('scanlines').checked,
+                scanlineSprites: parseInt(document.getElementById('scanlineSprites').value),
+                clockPreset: parseInt(document.getElementById('clockPreset').value),
+                vdpDevice: parseInt(document.getElementById('vdpDevice').value),
+                diagRegisters: document.getElementById('diagRegisters').checked,
+                diagPerformance: document.getElementById('diagPerformance').checked,
+                diagPalette: document.getElementById('diagPalette').checked,
+                diagAddress: document.getElementById('diagAddress').checked,
+                customPalette: currentPalette
+            };
+        }
+
+        // Update configuration summary
+        function updateSummary() {
+            const config = getCurrentConfig();
+            const summary = document.getElementById('configSummary');
+
+            const spriteNames = ['4 sprites', '8 sprites', '16 sprites', '32 sprites'];
+            const spriteName = spriteNames[config.scanlineSprites];
+
+            const clockNames = ['252.0 MHz', '302.4 MHz', '352.0 MHz'];
+            const clockName = clockNames[config.clockPreset];
+
+            const vdpNames = ['TMS9918A', 'TMS992xA', 'TMS9118', 'TMS912x'];
+            const vdpName = vdpNames[config.vdpDevice] || 'TMS9918A';
+
+            const driverNames = ['Auto', 'VGA / HDMI (forced)', 'SCART RGBs (forced)'];
+            const driverName = driverNames[config.dispDriverPref] || 'Auto';
+
+            const vgaModeNames = ['480p @ 60Hz'];
+            const vgaModeName = vgaModeNames[config.vgaMode] || '480p @ 60Hz';
+
+            const scartModeNames = ['576i @ 50Hz (PAL)', '480i @ 60Hz (NTSC)'];
+            const scartModeName = scartModeNames[config.scartMode] || '576i @ 50Hz (PAL)';
+
+            const diagnostics = [
+                config.diagRegisters && 'Registers',
+                config.diagPerformance && 'Performance',
+                config.diagPalette && 'Palette',
+                config.diagAddress && 'Address'
+            ].filter(Boolean);
+
+            const diagText = diagnostics.length > 0 ? diagnostics.join(', ') : 'None';
+
+            // Determine palette status. The dropdown value may be 'custom' (after
+            // a manual edit) which has no preset entry - report it as "Custom".
+            const selectedPreset = document.getElementById('palettePreset').value;
+            let paletteText;
+            if (selectedPreset === 'custom' || !PALETTES[selectedPreset]) {
+                paletteText = 'Custom';
+            } else {
+                const selectedPalette = PALETTES[selectedPreset].colors;
+                const paletteMatches = currentPalette.every((color, i) => color === selectedPalette[i]);
+                paletteText = paletteMatches ? PALETTES[selectedPreset].name : 'Custom';
+            }
+
+            // Render colours 1..15 as a row of small swatches (skip transparent index 0)
+            const paletteSwatches = currentPalette.slice(1)
+                .map(c => `<span class="palette-swatch" style="background:${rgb12ToHex(c)}"></span>`)
+                .join('');
+
+            summary.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-label">Compatible With:</span>
+                    <span class="summary-value">PICO9918 &amp; PICO9918 PRO</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Target Firmware:</span>
+                    <span class="summary-value">v${FW_VERSION_STR}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">VDP Device:</span>
+                    <span class="summary-value">${vdpName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">CRT Scanlines:</span>
+                    <span class="summary-value">${config.scanlines ? 'ON' : 'OFF'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Scanline Sprites:</span>
+                    <span class="summary-value">${spriteName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Clock Frequency:</span>
+                    <span class="summary-value">${clockName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Output Driver:</span>
+                    <span class="summary-value">${driverName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">VGA-HDMI Mode:</span>
+                    <span class="summary-value">${vgaModeName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">SCART Mode:</span>
+                    <span class="summary-value">${scartModeName}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Diagnostics:</span>
+                    <span class="summary-value">${diagText}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Palette:</span>
+                    <span class="summary-value"><span class="palette-swatches">${paletteSwatches}</span>${paletteText}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">File Size:</span>
+                    <span class="summary-value">2048 bytes (4 blocks)</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Target Address:</span>
+                    <span class="summary-value">0x${CONFIG_FLASH_ADDR.toString(16).toUpperCase()}</span>
+                </div>
+            `;
+        }
+
+        // Create configuration array
+        function createConfigArray(options, picoModel, hwVersion) {
+            const config = new Uint8Array(CONFIG_BYTES);
+
+            // Set hardware fields for validation
+            config[CONF_PICO_MODEL] = picoModel;
+            config[CONF_HW_VERSION] = hwVersion;
+            // CONF_DISP_DRIVER is recomputed by the firmware on boot from
+            // CONF_DISP_DRIVER_PREF + dongle detection; we just leave it 0.
+
+            // Stamp the firmware version so readConfig() does not treat this as
+            // an older config and reset every field to default via migration.
+            config[CONF_SW_VERSION] = CONF_SW_VERSION_VALUE;
+            config[CONF_SW_PATCH_VERSION] = CONF_SW_PATCH_VALUE;
+
+            // Set user-configurable options
+            config[CONF_CRT_SCANLINES] = options.scanlines ? 1 : 0;
+            config[CONF_SCANLINE_SPRITES] = options.scanlineSprites & 0x03;
+            config[CONF_CLOCK_PRESET_ID] = options.clockPreset & 0x03;
+            config[CONF_SCART_MODE] = options.scartMode & 0x01;
+            config[CONF_VDP_DEVICE] = options.vdpDevice & 0x03;
+            config[CONF_DISP_DRIVER_PREF] = options.dispDriverPref & 0x03;
+            config[CONF_VGA_MODE] = options.vgaMode & 0x01;
+
+            // Set diagnostic options
+            config[CONF_DIAG_REGISTERS] = options.diagRegisters ? 1 : 0;
+            config[CONF_DIAG_PERFORMANCE] = options.diagPerformance ? 1 : 0;
+            config[CONF_DIAG_PALETTE] = options.diagPalette ? 1 : 0;
+            config[CONF_DIAG_ADDRESS] = options.diagAddress ? 1 : 0;
+
+            // Set main DIAG flag if any diagnostic is enabled
+            config[CONF_DIAG] = (config[CONF_DIAG_REGISTERS] ||
+                                config[CONF_DIAG_PERFORMANCE] ||
+                                config[CONF_DIAG_PALETTE] ||
+                                config[CONF_DIAG_ADDRESS]) ? 1 : 0;
+
+            // Set palette (color 0 always black)
+            config[CONF_PALETTE_IDX_0] = 0x00;
+            config[CONF_PALETTE_IDX_0 + 1] = 0x00;
+
+            // Colors 1-15 from custom palette
+            const palette = options.customPalette || PALETTE_TMS9918A;
+            for (let i = 1; i < 16; i++) {
+                const rgb = palette[i];
+                config[CONF_PALETTE_IDX_0 + (i * 2)] = (rgb >> 8) & 0xFF;
+                config[CONF_PALETTE_IDX_0 + (i * 2) + 1] = rgb & 0xFF;
+            }
+
+            return config;
+        }
+
+        // Create UF2 block. targetAddr/payloadSize let a block target either
+        // the main config block or the pending block sector.
+        function createUF2Block(payload, familyId, blockNo, numBlocks, targetAddr, payloadSize) {
+            const block = new Uint8Array(512);
+            const view = new DataView(block.buffer);
+
+            // UF2 header (32 bytes) - all little-endian
+            view.setUint32(0, UF2_MAGIC_START0, true);
+            view.setUint32(4, UF2_MAGIC_START1, true);
+            view.setUint32(8, UF2_FLAG_FAMILYID, true);
+            view.setUint32(12, targetAddr, true);
+            view.setUint32(16, payloadSize, true);
+            view.setUint32(20, blockNo, true);
+            view.setUint32(24, numBlocks, true);
+            view.setUint32(28, familyId, true);
+
+            // Copy payload
+            block.set(payload, 32);
+
+            // Magic end
+            view.setUint32(508, UF2_MAGIC_END, true);
+
+            return block;
+        }
+
+        // Build a CONFIRMED PendingDisplay payload (matches config.h struct
+        // layout: state, dispDriverPref, vgaMode, scartMode, clockPresetId,
+        // then reserved zero bytes). Writing this clears any stale pending
+        // block so the main config's display settings actually boot. The RP2
+        // bootloader erases the whole 4 KB sector before writing this block.
+        function createPendingArray(options) {
+            const pending = new Uint8Array(PENDING_PAYLOAD_BYTES);
+            pending[0] = PENDING_STATE_CONFIRMED;
+            pending[1] = options.dispDriverPref & 0x03;
+            pending[2] = options.vgaMode & 0x01;
+            pending[3] = options.scartMode & 0x01;
+            pending[4] = options.clockPreset & 0x03;
+            // pending[5..15] remain zero (reserved)
+            return pending;
+        }
+
+        // Generate combined UF2 file. Per device family we write two blocks:
+        // the 256-byte main config block, and a 16-byte CONFIRMED pending
+        // block that clears the display-change rollback sector.
+        function generateUF2(options) {
+            const rp2040Config = createConfigArray(options, PICO_MODEL_RP2040, HW_VER_1_X);
+            const rp2350Config = createConfigArray(options, PICO_MODEL_RP2350, HW_VER_2_X);
+            const pending = createPendingArray(options);
+
+            // Every block is self-contained (blockNo 0 / numBlocks 1), matching
+            // the proven single-block-per-family scheme: independent 0/1 blocks
+            // route purely by family ID. Each carries a full 256-byte payload so
+            // the strict RP2350 bootloader accepts them.
+            const blocks = [
+                createUF2Block(rp2040Config, FAMILY_ID_RP2040, 0, 1, CONFIG_FLASH_ADDR, CONFIG_BYTES),
+                createUF2Block(pending,      FAMILY_ID_RP2040, 0, 1, PENDING_FLASH_ADDR, PENDING_PAYLOAD_BYTES),
+                createUF2Block(rp2350Config, FAMILY_ID_RP2350, 0, 1, CONFIG_FLASH_ADDR, CONFIG_BYTES),
+                createUF2Block(pending,      FAMILY_ID_RP2350, 0, 1, PENDING_FLASH_ADDR, PENDING_PAYLOAD_BYTES),
+            ];
+
+            const combined = new Uint8Array(blocks.length * 512);
+            blocks.forEach((b, i) => combined.set(b, i * 512));
+            return combined;
+        }
+
+        // Download UF2 file
+        function downloadUF2(data, filename) {
+            const blob = new Blob([data], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Generate and download configuration
+        function generateAndDownload() {
+            const config = getCurrentConfig();
+
+            const filename = 'pico9918_config.uf2';
+
+            try {
+                const uf2Data = generateUF2(config);
+                downloadUF2(uf2Data, filename);
+
+                // Show success feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Downloaded!';
+                btn.style.background = 'var(--success-color)';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            } catch (error) {
+                alert('Error generating UF2 file: ' + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

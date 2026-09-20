@@ -1,6 +1,6 @@
 # PICO9918 PCBs
 
-Here you will find schematics and gerbers for all working revisions of the PICO9918. There are two main variants of the hardware. Due to a minor difference in RP2040 GPIO pinouts, firmware binaries aren't compatible between the two, however both are fully supported with latest firmware updates and separate firmware packages are provided for each.
+Here you will find schematics and gerbers for all working revisions of the PICO9918. There are three main variants of the hardware. 
 
 ### DIY Piggybacked board (v0.3)
 
@@ -10,14 +10,54 @@ This version is relatively cheap and easy to build and is powered by a piggyback
 
 See [PICO9918 v0.3](v0.3)
 
-### Fully integrated single board (v0.4 - v1.3+)
+### Fully integrated RP2040 single board (v0.4 - v1.3)
 
 From v0.4 the RP2040 has been integrated onto the PICO9918 PCB, making a much smaller small form factor. This revision has many small (0402) components and can be challenging (and more expensive) to build. They can be purchased too.
 
 <p align="left"><a href="../img/pico9918_v1_0_sm.png"><img src="../img/pico9918_v1_0_sm.png" 
 alt="PICO9918 v1.0" width="240px"></a></p>
 
+### Fully integrated RP2350 single board (PRO v2.0+)
+
+With the introduction of the RP2350, the PICO9918 v2.0 "PRO" was produced to take advantage of the much improved instruction set.
+
+For a detailed changelog covering all versions, see the [revision history](#revision-history) below.
+
+# Dongles
+
+From v1.2 onwards, the PICO9918 exposes its video output over a 12-pin FFC interface, allowing different output dongles to be connected.
+
+<p align="left"><a href="../img/pro-with-dongles-2.jpg"><img src="../img/pro-with-dongles-2.jpg" alt="PICO9918 PRO with dongles" width="720px"></a></p>
+
+## [VGA dongle v1.2](vga)
+
+The standard VGA output dongle. Provides a DE-15 VGA connector.
+
+## [HDMI dongle v1.1](hdmi)
+
+Digital AV dongle providing HDMI output with optional audio.
+
+<p align="left"><a href="../img/hdmi_with_audio.jpg"><img src="../img/hdmi_with_audio.jpg" alt="PICO9918 HDMI dongle" width="480px"></a></p>
+
+## [SCART dongle v1.3](scart)
+
+SCART RGBs output dongle supporting PAL and NTSC timing, with optional audio.
+
+<p align="left"><a href="../img/scart_with_audio.jpg"><img src="../img/scart_with_audio.jpg" alt="PICO9918 SCART dongle" width="480px"></a></p>
+
 # Revision history
+
+## [PRO v2.0 (2026-03-09)](v2.0)
+
+<p align="left"><a href="../img/pico9918pro_800_1.jpg"><img src="../img/pico9918pro_800_1.jpg" alt="PICO9918 PRO v2.0" width="720px"></a></p>
+
+### Changelog
+- Switched from RP2040 to RP2354A (RP2350 with integrated flash).
+- Removed Winbond 16mbit flash.
+- Switched from dual transceiver data I/O to single transceiver.
+- Additional power filtering to FFC interface to improve HDMI dongle power delivery.
+- Added optional BOOTSEL pin on FFC interface.
+- Many routing improvements.
 
 ## [v1.3 (2025-07-02)](v1.2)
 

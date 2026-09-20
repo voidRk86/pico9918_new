@@ -21,7 +21,11 @@ pico_set_program_url(${PROGRAM} "https://github.com/visrealm/pico9918")
 
 # generate image array source files from png images
 if (NOT PICO9918_NO_SPLASH)
+if (PICO_BOARD STREQUAL "pico9918pro")
+visrealm_generate_image_source_ram(${PROGRAM} bmp_splash res/splash_pro.png )
+else()
 visrealm_generate_image_source_ram(${PROGRAM} bmp_splash res/splash.png )
+endif()
 endif()
 
 visrealm_generate_image_source_ram(${PROGRAM} bmp_font res/font.png )
@@ -40,9 +44,9 @@ pico_set_binary_type(${PROGRAM} copy_to_ram)
 
 target_compile_definitions(${PROGRAM} PRIVATE
     PICO9918_NO_SPLASH=$<BOOL:${PICO9918_NO_SPLASH}>
-    PICO9918_SCART_RGBS=$<BOOL:${PICO9918_SCART_RGBS}>
-    PICO9918_SCART_PAL=$<BOOL:${PICO9918_SCART_PAL}>
+    PICO9918_ENABLE_SCART=$<BOOL:${PICO9918_ENABLE_SCART}>
     PICO9918_DIAG=$<BOOL:${PICO9918_DIAG}>
+    PICO9918_GPU_FRAME_COUNTER=$<BOOL:${PICO9918_GPU_FRAME_COUNTER}>
     PICO9918_VERSION="${PICO9918_VERSION}"
     PICO9918_MAJOR_VER=${PICO9918_MAJOR_VER}
     PICO9918_MINOR_VER=${PICO9918_MINOR_VER}

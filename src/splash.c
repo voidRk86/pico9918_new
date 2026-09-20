@@ -9,16 +9,25 @@
  *
  */
 
-#include "display.h"
-
 #include "splash.h"
 #include "vga.h"
 
 #if !PICO9918_NO_SPLASH
 #include "bmp_splash.h"
+// img2carray.py derives symbol names from filenames; splash_pro.png -> splashpro*
+#ifdef PICO_RP2350
+#define splash      splashpro
+#define splashWidth splashproWidth
+#define splashHeight splashproHeight
+#define splash_pal  splashpro_pal
+#endif
 #endif
 
-static int logoOffset = 100;
+#define SPLASH_ENTER_FRAMES 60
+#define SPLASH_HOLD_FRAMES  180
+#define SPLASH_START_POS    (SPLASH_ENTER_FRAMES + splashHeight + 2)
+
+static int logoOffset = SPLASH_START_POS;
 static bool canHideSplash = false;
 
 /*
@@ -26,7 +35,7 @@ static bool canHideSplash = false;
  */
 void resetSplash()
 {
-  logoOffset = 100;
+  logoOffset = SPLASH_START_POS;
 }
 
 void allowSplashHide()
@@ -43,14 +52,14 @@ void outputSplash(uint16_t y, uint32_t frameCount, uint32_t vBorder, uint32_t vP
 
   if (y == 0)
   {
-    if (frameCount & 0x01)
+    //if (frameCount & 0x01)
     {
-      if (frameCount < 200 && logoOffset > (22 - splashHeight)) --logoOffset;
-      else if (canHideSplash && frameCount > 500) ++logoOffset;
+      if (frameCount < SPLASH_ENTER_FRAMES) --logoOffset;
+      else if (canHideSplash && frameCount > (SPLASH_ENTER_FRAMES + SPLASH_HOLD_FRAMES)) ++logoOffset;
     }
   }
 
-  if (y < (vgaCurrentParams()->params.vVirtualPixels - 1))
+  if (y <= vgaCurrentParams()->params.vVirtualPixels)
   {
     y -= vBorder + vPixels + logoOffset;
     if (y < splashHeight)
