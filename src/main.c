@@ -700,10 +700,8 @@ static void __time_critical_func(tmsScanline)(uint16_t y, VgaParams* params, uin
 
     dma_channel_wait_for_finish_blocking(dma32);
 
-#ifdef BGR12PALETTE
     if (bModeText80_8)
       return;
-#endif
     uint8_t *src = tmsScanlineBuffer;
     uint8_t *end = tmsScanlineBuffer + TMS9918_PIXELS_X;
     uint32_t* dP = (uint32_t*)(pixels) + halfHBorder;
