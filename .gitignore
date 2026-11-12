@@ -15,3 +15,4 @@ testapps/**
 configtool/build/**
 configtool/CLAUDE.md
 pico9918_config.cmake
+.cache/*
